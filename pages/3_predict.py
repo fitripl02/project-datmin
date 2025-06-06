@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.express as px
+import random
 
 st.set_page_config(page_title="Rating Prediction", layout="wide", page_icon="⭐")
 
@@ -57,6 +58,12 @@ st.markdown("""
         font-weight: 400;
     }
     
+    .prediction-result {
+        color: var(--primary-color);
+        font-size: 1.2em;
+        margin: 10px 0;
+    }
+    
     @media (max-width: 768px) {
         .main-title {
             font-size: 2.2em;
@@ -69,14 +76,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Function to load model and label encoder
-def load_model():
+# Function to load model, label encoder, and dataset
+def load_model_and_data():
     try:
         model = joblib.load('model/model.pkl')
         le = joblib.load('model/label_encoder.pkl')
-        return model, le
+        # Load dataset to get restaurant names and valid resto types
+        data = pd.read_csv('semarang_resto_dataset.csv')
+        # Get unique resto types from the dataset
+        valid_resto_types = data['resto_type'].unique()
+        return model, le, data, valid_resto_types
     except FileNotFoundError:
-        st.error("File model tidak ditemukan! Pastikan model.pkl dan label_encoder.pkl ada di folder model/.")
+        st.error("File model atau dataset tidak ditemukan! Pastikan model.pkl, label_encoder.pkl, dan semarang_resto_dataset.csv ada.")
         st.stop()
 
 # Initialize session state to store prediction results
@@ -90,13 +101,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-model, le = load_model()
+model, le, data, valid_resto_types = load_model_and_data()
 
 st.subheader("Masukkan Detail Restoran")
 with st.form("formulir_prediksi"):
     col1, col2 = st.columns(2)
     with col1:
-        resto_type = st.selectbox("Jenis Restoran", le.classes_)
+        # Filter le.classes_ to only include types present in the dataset
+        valid_classes = [cls for cls in le.classes_ if cls in valid_resto_types]
+        resto_type = st.selectbox("Jenis Restoran", valid_classes)
         avg_hours = st.number_input("Rata-rata Jam Operasional", min_value=0.0, max_value=24.0, value=10.0)
         halal_food = st.checkbox("Menyediakan Makanan Halal")
         wifi = st.checkbox("Fasilitas WiFi")
@@ -113,6 +126,13 @@ with st.form("formulir_prediksi"):
         if avg_hours <= 0:
             st.warning("Jam operasional harus lebih dari 0!")
         else:
+            # Filter dataset berdasarkan resto_type yang dipilih
+            filtered_data = data[data['resto_type'] == resto_type]
+            if not filtered_data.empty:
+                resto_name = random.choice(filtered_data['resto_name'].values)
+            else:
+                resto_name = f"New {resto_type.replace('_', ' ').title()}"
+
             input_data = pd.DataFrame({
                 'average_operation_hours': [avg_hours],
                 'sell_halal_food': [1 if halal_food else 0],
@@ -129,14 +149,22 @@ with st.form("formulir_prediksi"):
             try:
                 prediction = model.predict(input_data)[0]
                 st.subheader("Hasil Prediksi")
-                st.markdown(f"<h3 style='color: var(--primary-color);'>Rating Restoran: {prediction:.2f}/5 ⭐</h3>", unsafe_allow_html=True)
+                # Menampilkan hasil dengan susunan baru
+                st.markdown("""
+                    <div class="prediction-result">
+                        <p>Nama Restoran: <strong>{}</strong></p>
+                        <p>Jenis: <strong>{}</strong></p>
+                        <p>Rating: <strong>{:.2f}/5 ⭐</strong></p>
+                    </div>
+                """.format(resto_name, resto_type.replace('_', ' ').title(), prediction), unsafe_allow_html=True)
 
                 fig = px.pie(values=[prediction, 5-prediction], names=['Rating', 'Sisa'], hole=0.4,
                              title="Visualisasi Rating", color_discrete_sequence=['var(--primary-color)', 'var(--neutral-200)'])
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Store prediction data in session state
+                # Store prediction data in session state, including selected resto name
                 st.session_state.prediction_data = pd.DataFrame({
+                    'Resto_Name': [resto_name],
                     'Resto_Type': [resto_type],
                     'Average_Operation_Hours': [avg_hours],
                     'Predicted_Rating': [prediction]
