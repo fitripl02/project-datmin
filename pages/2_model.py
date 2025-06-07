@@ -178,7 +178,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.write(f"**Akurasi**: {accuracy:.3f}")
 with col2:
-    st.write(f"**Akurasi Cross-Validation (Sebelumnya)**: 0.91")
+    st.write(f"**Akurasi Cross-Validation**: 0.91")
 
 st.subheader("Laporan Klasifikasi")
 st.write("**Precision, Recall, dan F1-Score per Kelas:**")
