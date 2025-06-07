@@ -222,14 +222,6 @@ st.markdown("""
         background: var(--secondary-light);
         animation-delay: 0.35s;
     }
-    .tech-item:nth-child(7) { 
-        background: var(--accent-light);
-        animation-delay: 0.4s;
-    }
-    .tech-item:nth-child(8) { 
-        background: var(--success-color);
-        animation-delay: 0.45s;
-    }
     
     /* Simple Hover Effects */
     .tech-item:hover {
@@ -370,20 +362,20 @@ st.markdown("""
 st.markdown("""
 <div class="stats-container">
     <div class="stat-card">
-        <div class="stat-number">500+</div>
-        <div class="stat-label">Restoran Dianalisis</div>
+        <div class="stat-number">74</div>
+        <div class="stat-label">Jenis Restoran</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">95%</div>
+        <div class="stat-number">91%</div>
         <div class="stat-label">Akurasi Model</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">50K+</div>
+        <div class="stat-number">2000</div>
         <div class="stat-label">Review Diproses</div>
     </div>
     <div class="stat-card">
         <div class="stat-number">24/7</div>
-        <div class="stat-label">Monitoring</div>
+        <div class="stat-label">Akses</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -391,9 +383,9 @@ st.markdown("""
 st.markdown("""
 <div class="welcome-section">
     <h3>Selamat Datang di Dashboard Analytics Restoran Semarang</h3>
-    <p>Platform komprehensif untuk analisis data restoran menggunakan teknologi Machine Learning terdepan. 
-    Dapatkan insight mendalam tentang performa restoran, prediksi rating, dan trend pasar kuliner di Semarang.</p>
-    <p><span class="highlight">✨ Fitur Unggulan:</span> Real-time Analytics, Predictive Modeling, Interactive Visualizations</p>
+    <p>Platform komprehensif untuk analisis data restoran menggunakan teknologi Machine Learning modern. 
+    Dapatkan insight tentang karakteristik restoran dan prediksi rating untuk mendukung keputusan bisnis kuliner di Semarang.</p>
+    <p><span class="highlight">✨ Fitur Unggulan:</span> Predictive Modeling, Interactive Visualizations</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -404,23 +396,23 @@ st.markdown("""
         <div class="feature-title">Exploratory Data Analysis</div>
         <div class="feature-description">
             Jelajahi data restoran dengan visualisasi interaktif. Analisis distribusi rating, 
-            kategori makanan, lokasi, dan trend temporal dengan chart yang responsif dan informatif.
+            jenis restoran, dan fasilitas dengan chart yang responsif dan informatif.
         </div>
     </div>
     <div class="feature-card">
         <div class="feature-icon">⚙️</div>
-        <div class="feature-title">Machine Learning Models</div>
+        <div class="feature-title">Models</div>
         <div class="feature-description">
-            Latih dan evaluasi berbagai model ML seperti Random Forest, SVM, dan Neural Networks. 
-            Bandingkan performa model dengan metrics komprehensif dan visualisasi hasil prediksi.
+            Latih dan evaluasi model ML seperti XGBoost. Bandingkan performa model 
+            dengan metrik komprehensif dan visualisasi hasil prediksi.
         </div>
     </div>
     <div class="feature-card">
         <div class="feature-icon">🔮</div>
         <div class="feature-title">Rating Prediction</div>
         <div class="feature-description">
-            Prediksi rating restoran baru berdasarkan karakteristik seperti lokasi, kategori, 
-            harga, dan fasilitas menggunakan model yang telah dilatih dengan akurasi tinggi.
+            Prediksi rating restoran baru berdasarkan karakteristik seperti jenis restoran, 
+            fasilitas, dan jam operasional menggunakan model yang telah dilatih.
         </div>
     </div>
 </div>
@@ -431,10 +423,10 @@ st.markdown("""
     <div class="info-card">
         <h3>📋 Informasi Dataset</h3>
         <p><span class="highlight">Dataset:</span> semarang_resto_dataset.csv</p>
-        <p><span class="highlight">Jumlah Records:</span> 1,000+ restoran</p>
-        <p><span class="highlight">Features:</span> 15+ variabel analisis</p>
-        <p><span class="highlight">Coverage:</span> Seluruh wilayah Semarang</p>
-        <p><span class="highlight">Update:</span> Real-time data sync</p>
+        <p><span class="highlight">Jumlah Records:</span> 5 restoran</p>
+        <p><span class="highlight">Features:</span> 10 variabel analisis</p>
+        <p><span class="highlight">Coverage:</span> Terbatas pada data tersedia</p>
+        <p><span class="highlight">Update:</span> Data statis</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -449,8 +441,6 @@ st.markdown("""
         <span class="tech-item">🤖 Scikit-learn</span>
         <span class="tech-item">📈 Plotly</span>
         <span class="tech-item">🔢 NumPy</span>
-        <span class="tech-item">📊 Seaborn</span>
-        <span class="tech-item">⚡ TensorFlow</span>
     </div>
 </div>
 """, unsafe_allow_html=True)

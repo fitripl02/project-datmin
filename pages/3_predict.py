@@ -79,18 +79,38 @@ st.markdown("""
 # Function to load model, label encoder, and dataset
 def load_model_and_data():
     try:
-        model = joblib.load('model/model.pkl')
-        le = joblib.load('model/label_encoder.pkl')
-        # Load dataset to get restaurant names and valid resto types
+        model = joblib.load('models/model.pkl')
+        le = joblib.load('models/label_encoder.pkl')  # Use the old label encoder
         data = pd.read_csv('semarang_resto_dataset.csv')
-        # Get unique resto types from the dataset
-        valid_resto_types = data['resto_type'].unique()
+        valid_resto_types = data['resto_type'].dropna().unique()
         return model, le, data, valid_resto_types
     except FileNotFoundError:
-        st.error("File model atau dataset tidak ditemukan! Pastikan model.pkl, label_encoder.pkl, dan semarang_resto_dataset.csv ada.")
+        st.error("File model atau dataset tidak ditemukan! Pastikan model.pkl, label_encoder.pkl, dan semarang_resto_dataset.csv ada di folder models/.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error memuat model atau dataset: {str(e)}")
         st.stop()
 
-# Initialize session state to store prediction results
+# Function to preprocess input data for old model
+def preprocess_input(resto_type, avg_hours, halal_food, wifi, toilet, children, dine_in, take_away, delivery, open_space, le):
+    # Encode resto_type using label encoder
+    encoded_resto_type = le.transform([resto_type])[0] if resto_type in le.classes_ else 0  # Default to 0 if not in classes
+    
+    input_data = pd.DataFrame({
+        'average_operation_hours': [avg_hours],
+        'sell_halal_food': [1 if halal_food else 0],
+        'wifi_facility': [1 if wifi else 0],
+        'toilet_facility': [1 if toilet else 0],
+        'suitable_for_children': [1 if children else 0],
+        'dine_in': [1 if dine_in else 0],
+        'take_away': [1 if take_away else 0],
+        'delivery': [1 if delivery else 0],
+        'open_space': [1 if open_space else 0],
+        'resto_type': [encoded_resto_type]  # Encoded value
+    })
+    return input_data
+
+# Initialize session state
 if 'prediction_data' not in st.session_state:
     st.session_state.prediction_data = None
 
@@ -101,15 +121,18 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Load model and data
 model, le, data, valid_resto_types = load_model_and_data()
 
 st.subheader("Masukkan Detail Restoran")
 with st.form("formulir_prediksi"):
     col1, col2 = st.columns(2)
     with col1:
-        # Filter le.classes_ to only include types present in the dataset
-        valid_classes = [cls for cls in le.classes_ if cls in valid_resto_types]
-        resto_type = st.selectbox("Jenis Restoran", valid_classes)
+        valid_classes = valid_resto_types.tolist()  # Use valid_resto_types from dataset
+        if not valid_classes:
+            st.error("Tidak ada jenis restoran di dataset. Periksa semarang_resto_dataset.csv.")
+            st.stop()
+        resto_type = st.selectbox("Jenis Restoran", valid_classes, key="resto_type_select")
         avg_hours = st.number_input("Rata-rata Jam Operasional", min_value=0.0, max_value=24.0, value=10.0)
         halal_food = st.checkbox("Menyediakan Makanan Halal")
         wifi = st.checkbox("Fasilitas WiFi")
@@ -122,57 +145,46 @@ with st.form("formulir_prediksi"):
         open_space = st.checkbox("Tersedia Ruang Terbuka")
     submitted = st.form_submit_button("Prediksi Rating")
 
-    if submitted:
-        if avg_hours <= 0:
-            st.warning("Jam operasional harus lebih dari 0!")
+    if submitted and avg_hours > 0:
+        # Filter dataset berdasarkan resto_type yang dipilih
+        filtered_data = data[data['resto_type'] == resto_type]
+        if not filtered_data.empty:
+            resto_name = random.choice(filtered_data['resto_name'].values)
         else:
-            # Filter dataset berdasarkan resto_type yang dipilih
-            filtered_data = data[data['resto_type'] == resto_type]
-            if not filtered_data.empty:
-                resto_name = random.choice(filtered_data['resto_name'].values)
-            else:
-                resto_name = f"New {resto_type.replace('_', ' ').title()}"
+            resto_name = f"New {resto_type.replace('_', ' ').title()}"
 
-            input_data = pd.DataFrame({
-                'average_operation_hours': [avg_hours],
-                'sell_halal_food': [1 if halal_food else 0],
-                'wifi_facility': [1 if wifi else 0],
-                'toilet_facility': [1 if toilet else 0],
-                'suitable_for_children': [1 if children else 0],
-                'dine_in': [1 if dine_in else 0],
-                'take_away': [1 if take_away else 0],
-                'delivery': [1 if delivery else 0],
-                'open_space': [1 if open_space else 0],
-                'resto_type': [le.transform([resto_type])[0]]
+        # Preprocess input data with encoding
+        input_data = preprocess_input(resto_type, avg_hours, halal_food, wifi, toilet, children, dine_in, take_away, delivery, open_space, le)
+
+        try:
+            prediction = model.predict(input_data)[0]
+            st.subheader("Hasil Prediksi")
+            st.markdown("""
+                <div class="prediction-result">
+                    <p>Nama Restoran: <strong>{}</strong></p>
+                    <p>Jenis: <strong>{}</strong></p>
+                    <p>Rating: <strong>{:.2f}/5 ⭐</strong></p>
+                </div>
+            """.format(resto_name, resto_type.replace('_', ' ').title(), prediction), unsafe_allow_html=True)
+
+            # Pie chart for numerical prediction
+            fig = px.pie(values=[prediction, 5-prediction], names=['Rating', 'Sisa'], hole=0.4,
+                         title="Visualisasi Rating", color_discrete_sequence=['var(--primary-color)', 'var(--neutral-200)'])
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Store prediction data
+            st.session_state.prediction_data = pd.DataFrame({
+                'Resto_Name': [resto_name],
+                'Resto_Type': [resto_type],
+                'Average_Operation_Hours': [avg_hours],
+                'Predicted_Rating': [prediction]
             })
+        except Exception as e:
+            st.error(f"Terjadi error dalam prediksi: {str(e)}. Pastikan fitur dalam preprocess_input sesuai dengan model.pkl atau periksa encoding resto_type.")
+    elif submitted and avg_hours <= 0:
+        st.warning("Jam operasional harus lebih dari 0!")
 
-            try:
-                prediction = model.predict(input_data)[0]
-                st.subheader("Hasil Prediksi")
-                # Menampilkan hasil dengan susunan baru
-                st.markdown("""
-                    <div class="prediction-result">
-                        <p>Nama Restoran: <strong>{}</strong></p>
-                        <p>Jenis: <strong>{}</strong></p>
-                        <p>Rating: <strong>{:.2f}/5 ⭐</strong></p>
-                    </div>
-                """.format(resto_name, resto_type.replace('_', ' ').title(), prediction), unsafe_allow_html=True)
-
-                fig = px.pie(values=[prediction, 5-prediction], names=['Rating', 'Sisa'], hole=0.4,
-                             title="Visualisasi Rating", color_discrete_sequence=['var(--primary-color)', 'var(--neutral-200)'])
-                st.plotly_chart(fig, use_container_width=True)
-
-                # Store prediction data in session state, including selected resto name
-                st.session_state.prediction_data = pd.DataFrame({
-                    'Resto_Name': [resto_name],
-                    'Resto_Type': [resto_type],
-                    'Average_Operation_Hours': [avg_hours],
-                    'Predicted_Rating': [prediction]
-                })
-            except Exception as e:
-                st.error(f"Terjadi error dalam prediksi: {str(e)}")
-
-# Display download button outside of the form if prediction data exists
+# Display download button
 if st.session_state.prediction_data is not None:
     csv = st.session_state.prediction_data.to_csv(index=False)
     st.download_button("Unduh Hasil Prediksi", csv, "prediction_result.csv", "text/csv", use_container_width=True)
